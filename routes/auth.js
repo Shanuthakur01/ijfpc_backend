@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import { requireAuth } from "../middlewares/auth.js";
+
 const router = express.Router();
 
 const loginLimiter = rateLimit({
@@ -14,13 +15,29 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// helper
+function cookieOptions() {
+  const isProd = process.env.NODE_ENV === "production";
+
+  // ✅ For localhost/dev (HTTP): SameSite=Lax, Secure=false
+  // ✅ For production (HTTPS): SameSite=None, Secure=true
+  return {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  };
+}
+
 // POST /auth/login
 router.post("/login", loginLimiter, async (req, res) => {
   const { username, password } = req.body || {};
   const user = await User.findOne({ username: username?.toLowerCase() });
 
-  if (!user || !user.isActive)
+  if (!user || !user.isActive) {
     return res.status(401).json({ error: "Invalid credentials" });
+  }
 
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) return res.status(401).json({ error: "Invalid credentials" });
@@ -30,15 +47,9 @@ router.post("/login", loginLimiter, async (req, res) => {
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
-  const isProd = process.env.NODE_ENV === "production";
-  res.cookie("auth", token, {
-    httpOnly: true,
-    secure: isProd, // 🔑 false on localhost (HTTP), true in prod (HTTPS)
-    sameSite: "none",
 
-    path: "/",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+  res.cookie("auth", token, cookieOptions());
+
   res.json({
     ok: true,
     user: { id: user._id, name: user.name, role: user.role },
@@ -47,21 +58,27 @@ router.post("/login", loginLimiter, async (req, res) => {
 
 // POST /auth/logout
 router.post("/logout", (_req, res) => {
+  const isProd = process.env.NODE_ENV === "production";
+
   res.clearCookie("auth", {
     httpOnly: true,
     secure: isProd,
-    sameSite: "none",
+    sameSite: isProd ? "none" : "lax",
     path: "/",
   });
+
   res.json({ ok: true });
 });
+
 // GET /api/auth/me
 router.get("/me", requireAuth, async (req, res) => {
   const user = await User.findById(req.userId).select("_id name role").lean();
   if (!user) return res.status(401).json({ error: "Unauthenticated" });
+
   res.json({
     ok: true,
     user: { id: String(user._id), name: user.name, role: user.role },
   });
 });
+
 export default router;

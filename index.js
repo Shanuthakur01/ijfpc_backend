@@ -31,6 +31,7 @@ import preplacementPaymentsRoutes from "./routes/preplacement-payments.routes.js
 import reportRoutes from "./routes/timesheet_reports.js";
 import { Student } from "./models/student.model.js"; // for socket token check
 import { clerkMiddleware } from "@clerk/express";
+import hrUploadReportPublic from "./routes/hrUploadReport.public.js";
 const app = express();
 
 const allowedOrigins = [
@@ -39,6 +40,7 @@ const allowedOrigins = [
   "https://research.itjobsfactory.com",
   "https://placements.itjobsfactory.com",
   "https://timesheet.itjobsfactory.com",
+  "http://localhost:3000",
 ];
 
 app.use(
@@ -49,7 +51,7 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json());
-
+app.use("/api", hrUploadReportPublic);
 /* -------------------- Socket.IO server -------------------- */
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
