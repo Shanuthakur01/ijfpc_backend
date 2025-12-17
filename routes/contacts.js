@@ -562,6 +562,11 @@ router.post("/", requireAuth, async (req, res) => {
   if (profileUrl && String(profileUrl).trim() !== "") {
     try {
       const u = new URL(String(profileUrl).trim());
+      if (!["http:", "https:"].includes(u.protocol)) {
+        return res
+          .status(400)
+          .json({ error: "Profile URL must use http or https" });
+      }
       cleanProfileUrl = u.toString();
     } catch {
       return res.status(400).json({ error: "Invalid profile URL" });
