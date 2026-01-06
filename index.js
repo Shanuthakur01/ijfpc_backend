@@ -40,7 +40,6 @@ const allowedOrigins = [
   "https://research.itjobsfactory.com",
   "https://placements.itjobsfactory.com",
   "https://timesheet.itjobsfactory.com",
-  "http://localhost:3000",
 ];
 
 app.use(

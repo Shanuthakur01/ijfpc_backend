@@ -65,7 +65,6 @@ StudentSchema.pre("save", function (next) {
 
 // helpful indexes for queues & lookups (trimmed)
 StudentSchema.index({ createdAt: -1 });
-
 const Student =
   mongoose.models.Student || mongoose.model("Student", StudentSchema);
 
