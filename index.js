@@ -29,7 +29,6 @@ import timesheetAuthRouter from "./routes/timesheet_auth.js";
 import workdayRoutes from "./routes/timesheet_workday.js";
 import preplacementPaymentsRoutes from "./routes/preplacement-payments.routes.js";
 import reportRoutes from "./routes/timesheet_reports.js";
-import hrReportsRoutes from "./routes/hrContactStats.routes.js";
 
 import { Student } from "./models/student.model.js"; // for socket token check
 import { clerkMiddleware } from "@clerk/express";
