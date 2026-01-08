@@ -29,6 +29,8 @@ import timesheetAuthRouter from "./routes/timesheet_auth.js";
 import workdayRoutes from "./routes/timesheet_workday.js";
 import preplacementPaymentsRoutes from "./routes/preplacement-payments.routes.js";
 import reportRoutes from "./routes/timesheet_reports.js";
+import hrReportsRoutes from "./routes/hrContactStats.routes.js";
+
 import { Student } from "./models/student.model.js"; // for socket token check
 import { clerkMiddleware } from "@clerk/express";
 const app = express();
@@ -39,6 +41,7 @@ const allowedOrigins = [
   "https://research.itjobsfactory.com",
   "https://placements.itjobsfactory.com",
   "https://timesheet.itjobsfactory.com",
+  "http://localhost:3000",
 ];
 
 app.use(
@@ -109,6 +112,7 @@ app.use("/api/hr-contacts", hrStatsRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api", reportRoutes);
 app.use("/api/preplacement-payments", preplacementPaymentsRoutes);
+app.use("/api/hr-reports", hrReportsRoutes);
 app.use(clerkMiddleware());
 app.use("/api", timesheetAuthRouter);
 app.use("/api", workdayRoutes);

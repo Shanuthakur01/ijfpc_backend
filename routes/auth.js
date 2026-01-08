@@ -5,7 +5,10 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import { requireAuth } from "../middlewares/auth.js";
+
 const router = express.Router();
+
+const isProd = process.env.NODE_ENV === "production";
 
 const loginLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
@@ -13,6 +16,14 @@ const loginLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+const cookieBase = {
+  httpOnly: true,
+  secure: isProd, // false on localhost (HTTP), true in prod (HTTPS)
+  sameSite: isProd ? "none" : "lax",
+  path: "/",
+  ...(isProd ? { domain: ".itjobsfactory.com" } : {}), // ✅ critical for subdomains
+};
 
 // POST /auth/login
 router.post("/login", loginLimiter, async (req, res) => {
@@ -30,38 +41,33 @@ router.post("/login", loginLimiter, async (req, res) => {
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
-  const isProd = process.env.NODE_ENV === "production";
+
   res.cookie("auth", token, {
-    httpOnly: true,
-    secure: isProd, // 🔑 false on localhost (HTTP), true in prod (HTTPS)
-    sameSite: "none",
+    ...cookieBase,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // ms
+  });
 
-    path: "/",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
-  res.json({
-    ok: true,
-    user: { id: user._id, name: user.name, role: user.role },
-  });
-});
-
-// POST /auth/logout
-router.post("/logout", (_req, res) => {
-  res.clearCookie("auth", {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: "none",
-    path: "/",
-  });
-  res.json({ ok: true });
-});
-// GET /api/auth/me
-router.get("/me", requireAuth, async (req, res) => {
-  const user = await User.findById(req.userId).select("_id name role").lean();
-  if (!user) return res.status(401).json({ error: "Unauthenticated" });
   res.json({
     ok: true,
     user: { id: String(user._id), name: user.name, role: user.role },
   });
 });
+
+// POST /auth/logout
+router.post("/logout", (_req, res) => {
+  res.clearCookie("auth", cookieBase); // ✅ must match domain/path/samesite/secure
+  res.json({ ok: true });
+});
+
+// GET /auth/me
+router.get("/me", requireAuth, async (req, res) => {
+  const user = await User.findById(req.userId).select("_id name role").lean();
+  if (!user) return res.status(401).json({ error: "Unauthenticated" });
+
+  res.json({
+    ok: true,
+    user: { id: String(user._id), name: user.name, role: user.role },
+  });
+});
+
 export default router;

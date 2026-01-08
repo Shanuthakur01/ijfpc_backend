@@ -1,6 +1,6 @@
 // routes/dashboardRoutes.js
 import express from "express";
-import mongoose from "mongoose";
+
 import PrePlacementStudent from "../models/PrePlacementStudent.js";
 import PostPlacementOffer from "../models/PostPlacementOffer.js";
 

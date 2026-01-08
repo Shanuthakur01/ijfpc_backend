@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "seed:admin": "node scripts/seedAdmin.js"
+    "seed:hr": "node scripts/seed_hr_from_sheet.js"
   },
   "keywords": [],
   "author": "",
@@ -15,15 +15,18 @@
   "dependencies": {
     "@clerk/express": "^1.7.37",
     "@google/generative-ai": "^0.24.1",
+    "axios": "^1.13.2",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dayjs": "^1.11.18",
     "dotenv": "^17.2.1",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
     "express-validator": "^7.2.1",
+    "googleapis": "^165.0.0",
     "jsonwebtoken": "^9.0.2",
     "libphonenumber-js": "^1.12.17",
     "mongoose": "^8.17.2",

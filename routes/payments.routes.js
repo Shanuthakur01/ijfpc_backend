@@ -212,6 +212,7 @@ router.post("/verify", async (req, res) => {
         $setOnInsert: {
           name: s.fullName,
           nameKey,
+          email: s.email,
           courseName: undefined,
           terms: undefined,
           totalFee: 0,
@@ -300,5 +301,88 @@ router.post("/verify", async (req, res) => {
     return res.status(500).json({ error: e.message, verified: false });
   }
 });
+// IMPORTANT: this route must receive RAW body, not JSON-parsed
+router.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    try {
+      const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+      const signature = req.headers["x-razorpay-signature"];
+
+      const expectedSignature = crypto
+        .createHmac("sha256", webhookSecret)
+        .update(req.body)
+        .digest("hex");
+
+      if (signature !== expectedSignature) {
+        console.warn("Razorpay webhook: invalid signature");
+        return res.status(400).json({ error: "Invalid signature" });
+      }
+
+      // Now we know it's from Razorpay
+      const payload = JSON.parse(req.body.toString("utf8"));
+
+      // We only care about payment.captured (you can also handle order.paid)
+      if (payload.event !== "payment.captured") {
+        return res.json({ ok: true, ignored: true });
+      }
+
+      const paymentEntity = payload.payload.payment.entity;
+
+      // 1) amount is in paise → convert
+      const amount = Number(paymentEntity.amount) / 100;
+
+      // 2) we must know which user this belongs to
+      // we will send clerkId in order notes from frontend when we create the order
+      const clerkId = paymentEntity.notes?.clerkId;
+      if (!clerkId) {
+        console.error("Webhook payment has no clerkId in notes");
+        return res.json({ ok: true, missingClerkId: true });
+      }
+
+      // 3) idempotency: check if we already stored this payment in our fee doc
+      // simplest way: look for same payment_id in payments.raw
+      // (skip if already present)
+      const already = await PrePlacementStudent.findOne({
+        clerkId,
+        "payments.raw.razorpay_payment_id": paymentEntity.id,
+      }).lean();
+
+      if (already) {
+        return res.json({ ok: true, duplicated: true });
+      }
+
+      // 4) apply our business logic
+      const { feeDoc, user } = await applyPaymentToStudent({
+        clerkId,
+        amount,
+        mode: "razorpay-webhook",
+        raw: {
+          razorpay_payment_id: paymentEntity.id,
+          method: paymentEntity.method,
+        },
+      });
+
+      return res.json({
+        ok: true,
+        user: user
+          ? {
+              feePlan: user.feePlan,
+              installmentCount: user.installmentCount,
+              nextDueAt: user.nextDueAt,
+            }
+          : null,
+        fee: {
+          remainingFee: feeDoc.remainingFee,
+          netCollected: feeDoc.netCollected,
+        },
+      });
+    } catch (err) {
+      console.error("Razorpay webhook error:", err);
+      return res.status(500).json({ error: "Webhook failed" });
+    }
+  }
+);
 
 export default router;
