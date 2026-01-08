@@ -52,7 +52,7 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json());
-app.use("/api", hrUploadReportPublic);
+
 /* -------------------- Socket.IO server -------------------- */
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
