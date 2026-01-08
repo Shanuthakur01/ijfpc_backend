@@ -32,6 +32,7 @@ import reportRoutes from "./routes/timesheet_reports.js";
 import { Student } from "./models/student.model.js"; // for socket token check
 import { clerkMiddleware } from "@clerk/express";
 import hrUploadReportPublic from "./routes/hrUploadReport.public.js";
+import hrReportsRoutes from "./routes/hrContactStats.routes.js";
 const app = express();
 
 const allowedOrigins = [
@@ -111,6 +112,7 @@ app.use("/api/hr-contacts", hrStatsRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api", reportRoutes);
 app.use("/api/preplacement-payments", preplacementPaymentsRoutes);
+app.use("/api/hr-reports", hrReportsRoutes);
 app.use(clerkMiddleware());
 app.use("/api", timesheetAuthRouter);
 app.use("/api", workdayRoutes);
