@@ -34,6 +34,7 @@ import { Student } from "./models/student.model.js"; // for socket token check
 import { clerkMiddleware } from "@clerk/express";
 
 const app = express();
+app.set("trust proxy", 1);
 
 const allowedOrigins = [
   "https://dashboard.itjobsfactory.com",

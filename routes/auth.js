@@ -8,8 +8,6 @@ import { requireAuth } from "../middlewares/auth.js";
 
 const router = express.Router();
 
-const isProd = process.env.NODE_ENV === "production";
-
 const loginLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   limit: 20,
@@ -17,21 +15,32 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const cookieBase = {
-  httpOnly: true,
-  secure: isProd,                 // false on localhost (HTTP), true in prod (HTTPS)
-  sameSite: isProd ? "none" : "lax",
-  path: "/",
-  ...(isProd ? { domain: ".itjobsfactory.com" } : {}), // ✅ critical for subdomains
-};
+function getCookieOptions(req) {
+  const host = (req.headers.host || "").toLowerCase();
+  const isIJFDomain = host.endsWith("itjobsfactory.com");
+
+  const proto = (req.headers["x-forwarded-proto"] || "")
+    .toString()
+    .toLowerCase();
+  const isHttps = req.secure || proto === "https";
+
+  return {
+    httpOnly: true,
+    secure: isHttps,
+    sameSite: isIJFDomain ? "none" : "lax",
+    path: "/",
+    ...(isIJFDomain ? { domain: ".itjobsfactory.com" } : {}),
+  };
+}
 
 // POST /auth/login
 router.post("/login", loginLimiter, async (req, res) => {
   const { username, password } = req.body || {};
-  const user = await User.findOne({ username: username?.toLowerCase() });
 
-  if (!user || !user.isActive)
+  const user = await User.findOne({ username: username?.toLowerCase() });
+  if (!user || !user.isActive) {
     return res.status(401).json({ error: "Invalid credentials" });
+  }
 
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) return res.status(401).json({ error: "Invalid credentials" });
@@ -43,8 +52,8 @@ router.post("/login", loginLimiter, async (req, res) => {
   );
 
   res.cookie("auth", token, {
-    ...cookieBase,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // ms
+    ...getCookieOptions(req),
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
   res.json({
@@ -54,8 +63,8 @@ router.post("/login", loginLimiter, async (req, res) => {
 });
 
 // POST /auth/logout
-router.post("/logout", (_req, res) => {
-  res.clearCookie("auth", cookieBase); // ✅ must match domain/path/samesite/secure
+router.post("/logout", (req, res) => {
+  res.clearCookie("auth", getCookieOptions(req));
   res.json({ ok: true });
 });
 
