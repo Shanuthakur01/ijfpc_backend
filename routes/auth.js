@@ -19,7 +19,7 @@ const loginLimiter = rateLimit({
 
 const cookieBase = {
   httpOnly: true,
-  secure: isProd, // false on localhost (HTTP), true in prod (HTTPS)
+  secure: isProd,                 // false on localhost (HTTP), true in prod (HTTPS)
   sameSite: isProd ? "none" : "lax",
   path: "/",
   ...(isProd ? { domain: ".itjobsfactory.com" } : {}), // ✅ critical for subdomains

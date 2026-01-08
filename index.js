@@ -33,6 +33,8 @@ import hrReportsRoutes from "./routes/hrContactStats.routes.js";
 
 import { Student } from "./models/student.model.js"; // for socket token check
 import { clerkMiddleware } from "@clerk/express";
+import hrUploadReportPublic from "./routes/hrUploadReport.public.js";
+import hrReportsRoutes from "./routes/hrContactStats.routes.js";
 const app = express();
 
 const allowedOrigins = [
@@ -52,7 +54,7 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json());
-
+app.use("/api", hrUploadReportPublic);
 /* -------------------- Socket.IO server -------------------- */
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
