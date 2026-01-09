@@ -16,20 +16,20 @@ const loginLimiter = rateLimit({
 });
 
 function getCookieOptions(req) {
-  const host = (req.headers.host || "").toLowerCase(); // e.g. ijfpc-backend.onrender.com
-  const isIJFBackendHost = host.endsWith("itjobsfactory.com"); // ONLY true if backend is under ijf domain
+  const host = (req.headers.host || "").toLowerCase(); // e.g. ijfpcapi.itjobsfactory.com
+  const isIJFDomain = host.endsWith("itjobsfactory.com");
 
   const proto = (req.headers["x-forwarded-proto"] || "")
     .toString()
     .toLowerCase();
-  const isHttps = proto === "https" || req.secure;
+  const isHttps = req.secure || proto === "https";
 
   return {
     httpOnly: true,
-    secure: isHttps,
-    sameSite: "none", // cross-site cookie needed when frontend != backend
+    secure: isHttps, // must be true in prod
+    sameSite: isIJFDomain ? "lax" : "none", // ✅ best practice now
     path: "/",
-    ...(isIJFBackendHost ? { domain: ".itjobsfactory.com" } : {}), // ✅ only when backend host is ijf domain
+    ...(isIJFDomain ? { domain: ".itjobsfactory.com" } : {}),
   };
 }
 
